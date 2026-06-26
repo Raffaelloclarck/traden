@@ -1,0 +1,28 @@
+//@version=5
+strategy("Traden Bot Bridge", overlay=true, default_qty_type=strategy.percent_of_equity, default_qty_value=10)
+
+// === Eenvoudige strategie voor TradingView alerts ===
+// Kopieer naar TradingView → Pine Editor → Add to chart
+// Maak alert: "Any alert() function call" → Webhook URL (zie dashboard)
+
+fastLen = input.int(9, "EMA snel")
+slowLen = input.int(21, "EMA traag")
+emaFast = ta.ema(close, fastLen)
+emaSlow = ta.ema(close, slowLen)
+
+longSignal  = ta.crossover(emaFast, emaSlow)
+shortSignal = ta.crossunder(emaFast, emaSlow)
+
+plot(emaFast, "EMA 9", color=color.green)
+plot(emaSlow, "EMA 21", color=color.red)
+
+// Webhook JSON — past symbol automatisch aan
+if longSignal
+    alert('{"action":"buy","symbol":"' + syminfo.ticker + '","price":' + str.tostring(close) + '}', alert.freq_once_per_bar)
+
+if shortSignal
+    alert('{"action":"sell","symbol":"' + syminfo.ticker + '","price":' + str.tostring(close) + '}', alert.freq_once_per_bar)
+
+// Visueel op chart
+plotshape(longSignal,  "BUY",  shape.triangleup,   location.belowbar, color.green, size=size.small)
+plotshape(shortSignal, "SELL", shape.triangledown, location.abovebar, color.red,   size=size.small)

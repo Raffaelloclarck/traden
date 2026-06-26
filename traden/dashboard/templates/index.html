@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Traden — Paper Dashboard</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --green: #3fb950;
+      --red: #f85149;
+      --blue: #58a6ff;
+      --yellow: #d29922;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    h1 { font-size: 1.5rem; font-weight: 600; }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge-paper { background: #1f3a2f; color: var(--green); border: 1px solid var(--green); }
+    .badge-live { background: #3d1f1f; color: var(--red); border: 1px solid var(--red); }
+    .updated { color: var(--muted); font-size: 0.85rem; }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .card-label { color: var(--muted); font-size: 0.8rem; margin-bottom: 6px; }
+    .card-value { font-size: 1.6rem; font-weight: 700; }
+    .positive { color: var(--green); }
+    .negative { color: var(--red); }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+    h2 {
+      font-size: 1rem;
+      margin-bottom: 16px;
+      color: var(--blue);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+    th, td {
+      text-align: left;
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    th { color: var(--muted); font-weight: 500; font-size: 0.75rem; text-transform: uppercase; }
+    .empty { color: var(--muted); padding: 24px; text-align: center; }
+    .activity-item {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+    .activity-time { color: var(--muted); font-size: 0.75rem; }
+    .side-buy { color: var(--green); font-weight: 600; }
+    .side-sell { color: var(--red); font-weight: 600; }
+    .watchlist { color: var(--muted); font-size: 0.8rem; margin-top: 8px; }
+    .charts-section { margin-bottom: 24px; }
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 1100px) { .charts-grid { grid-template-columns: 1fr; } }
+    .chart-card { padding: 0; overflow: hidden; }
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .chart-title { font-size: 1rem; font-weight: 600; color: var(--blue); }
+    .chart-meta { font-size: 0.75rem; color: var(--muted); }
+    .tv-container { height: 420px; }
+    .tv-link {
+      color: var(--blue);
+      text-decoration: none;
+      font-size: 0.8rem;
+    }
+    .tv-link:hover { text-decoration: underline; }
+    .bot-overlay {
+      padding: 12px 20px;
+      background: #0d1117;
+      border-top: 1px solid var(--border);
+      font-size: 0.85rem;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .bot-stat { color: var(--muted); }
+    .bot-stat strong { color: var(--text); }
+    .tv-setup {
+      background: #161b22;
+      border: 1px solid var(--blue);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+      font-size: 0.85rem;
+    }
+    .tv-setup code {
+      background: #0d1117;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      word-break: break-all;
+    }
+    .tv-trade-item {
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.85rem;
+    }
+    .live-panel {
+      margin-bottom: 24px;
+      border: 1px solid var(--green);
+      box-shadow: 0 0 20px rgba(63, 185, 80, 0.08);
+    }
+    .live-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .live-dot {
+      width: 10px; height: 10px;
+      background: var(--green);
+      border-radius: 50%;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(63,185,80,0.6); }
+      50% { opacity: 0.7; box-shadow: 0 0 0 8px rgba(63,185,80,0); }
+    }
+    .live-title { font-weight: 600; font-size: 1.1rem; }
+    .live-sub { color: var(--muted); font-size: 0.8rem; margin-left: auto; }
+    .live-symbols {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      padding: 20px;
+    }
+    .symbol-card {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .symbol-card.action-buy { border-color: var(--green); }
+    .symbol-card.action-sell { border-color: var(--red); }
+    .symbol-name { font-weight: 700; font-size: 1rem; margin-bottom: 8px; }
+    .score-bar-bg {
+      height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin: 8px 0;
+    }
+    .score-bar-fill {
+      height: 100%; border-radius: 4px;
+      background: linear-gradient(90deg, var(--red), var(--yellow), var(--green));
+      transition: width 0.5s;
+    }
+    .action-badge {
+      display: inline-block; padding: 3px 8px; border-radius: 4px;
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    }
+    .action-badge.buy { background: #1f3a2f; color: var(--green); }
+    .action-badge.sell { background: #3d1f1f; color: var(--red); }
+    .action-badge.hold { background: #21262d; color: var(--muted); }
+    .live-events {
+      max-height: 200px; overflow-y: auto;
+      border-top: 1px solid var(--border);
+      padding: 12px 20px;
+    }
+    .live-event {
+      padding: 8px 0; border-bottom: 1px solid var(--border);
+      font-size: 0.85rem; animation: fadeIn 0.4s;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; } }
+    .live-event.trade { background: rgba(63,185,80,0.05); margin: 0 -20px; padding: 8px 20px; }
+    footer {
+      margin-top: 32px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Traden Dashboard</h1>
+      <div class="watchlist" id="watchlist"></div>
+    </div>
+    <div style="text-align:right">
+      <span class="badge badge-paper" id="mode-badge">PAPER</span>
+      <div class="updated" id="updated">Laden...</div>
+    </div>
+  </header>
+
+  <div class="summary" id="summary"></div>
+
+  <div class="tv-setup" id="tv-setup">
+    <h2 style="margin-bottom:12px">TradingView Live Trading</h2>
+    <p style="color:var(--muted);margin-bottom:12px" id="tv-mode-note">
+      Log in op jouw TradingView account → alerts sturen orders naar deze bot.
+    </p>
+    <p><strong>Webhook URL:</strong><br><code id="webhook-url">Laden...</code></p>
+    <p style="margin-top:8px;color:var(--muted)">
+      TradingView vereist een publieke URL — gebruik <code>ngrok http 8080</code> en vervang localhost.
+    </p>
+    <h3 style="margin:16px 0 8px;font-size:0.9rem">TradingView trades</h3>
+    <div id="tv-trades"><div class="empty">Nog geen TradingView alerts ontvangen</div></div>
+  </div>
+
+  <div class="card live-panel" id="live-panel">
+    <div class="live-header">
+      <div class="live-dot"></div>
+      <div class="live-title">Live Bot Trading</div>
+      <div class="live-sub" id="live-status">Wachten op bot...</div>
+    </div>
+    <div class="live-symbols" id="live-symbols"></div>
+    <div class="live-events" id="live-events"></div>
+  </div>
+
+  <div class="charts-section">
+    <h2 style="margin-bottom:16px">TradingView — live charts + bot status</h2>
+    <div class="charts-grid" id="charts"></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h2>Crypto</h2>
+      <div id="crypto-positions"></div>
+      <h2 style="margin-top:24px">Crypto trades</h2>
+      <div id="crypto-trades"></div>
+    </div>
+    <div class="card">
+      <h2>Aandelen</h2>
+      <div id="stock-positions"></div>
+      <h2 style="margin-top:24px">Aandelen trades</h2>
+      <div id="stock-trades"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:24px">
+    <h2>Recente scans</h2>
+    <div id="activity"></div>
+  </div>
+
+  <footer>Vernieuwt elke 5 sec · TradingView charts · Paper trading op je Mac</footer>
+
+  <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+  <script>
+    const tvWidgets = {};
+
+    function fmt(n, dec = 2) {
+      return Number(n).toLocaleString("nl-NL", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    }
+    function pnlClass(v) { return v >= 0 ? "positive" : "negative"; }
+    function pnlSign(v) { return v >= 0 ? "+" : ""; }
+
+    function positionsTable(positions) {
+      if (!positions.length) return '<div class="empty">Geen open posities</div>';
+      let rows = positions.map(p => `
+        <tr>
+          <td><strong>${p.symbol}</strong></td>
+          <td>${fmt(p.quantity, 4)}</td>
+          <td>$${fmt(p.entry)}</td>
+          <td>$${fmt(p.current)}</td>
+          <td class="${pnlClass(p.pnl)}">${pnlSign(p.pnl)}$${fmt(p.pnl)}</td>
+          <td class="${pnlClass(p.pnl_pct)}">${pnlSign(p.pnl_pct)}${fmt(p.pnl_pct)}%</td>
+        </tr>`).join("");
+      return `<table>
+        <thead><tr><th>Symbol</th><th>Qty</th><th>Entry</th><th>Nu</th><th>PnL</th><th>%</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+    }
+
+    function tradesTable(trades) {
+      if (!trades.length) return '<div class="empty">Nog geen trades</div>';
+      let rows = trades.map(t => {
+        const time = new Date(t.timestamp).toLocaleString("nl-NL");
+        const sideClass = t.side === "buy" ? "side-buy" : "side-sell";
+        return `<tr>
+          <td>${time}</td>
+          <td class="${sideClass}">${t.side.toUpperCase()}</td>
+          <td>${t.symbol}</td>
+          <td>${fmt(t.quantity, 4)}</td>
+          <td>$${fmt(t.price)}</td>
+          <td>$${fmt(t.total)}</td>
+        </tr>`;
+      }).join("");
+      return `<table>
+        <thead><tr><th>Tijd</th><th>Side</th><th>Symbol</th><th>Qty</th><th>Prijs</th><th>Totaal</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+    }
+
+    function renderActivity(items) {
+      if (!items.length) return '<div class="empty">Nog geen scans — run <code>python main.py --loop</code></div>';
+      return items.map(a => {
+        const time = new Date(a.timestamp).toLocaleString("nl-NL");
+        const signals = (a.signals || []).map(s =>
+          `<span class="${s.side === 'buy' ? 'side-buy' : 'side-sell'}">${s.side.toUpperCase()} ${s.symbol}</span>`
+        ).join(", ") || "Geen signalen";
+        const trades = (a.trades || []).length
+          ? `${a.trades.length} trade(s) uitgevoerd`
+          : "Geen trades";
+        return `<div class="activity-item">
+          <div class="activity-time">${time} · ${a.market.toUpperCase()}</div>
+          <div>Saldo: $${fmt(a.balance)} · Posities: ${a.positions}</div>
+          <div>Signalen: ${signals}</div>
+          <div>${trades}</div>
+        </div>`;
+      }).join("");
+    }
+
+    function renderTvSetup(data) {
+      const webhookUrl = (data.tradingview && data.tradingview.webhook_url)
+        || (window.location.origin + "/webhook/tradingview?secret=traden-live-secret");
+      document.getElementById("webhook-url").textContent = webhookUrl;
+
+      const tvMode = data.tradingview && data.tradingview.mode;
+      const modeNote = document.getElementById("tv-mode-note");
+      if (modeNote) {
+        modeNote.textContent = tvMode
+          ? "Modus: TradingView — trades komen van jouw TV alerts (jouw account)"
+          : "Modus: ML bot + TradingView webhook";
+      }
+
+      const trades = (data.tradingview && data.tradingview.trades) || [];
+      const el = document.getElementById("tv-trades");
+      if (!trades.length) {
+        el.innerHTML = '<div class="empty">Nog geen TradingView alerts — maak een alert op je chart</div>';
+        return;
+      }
+      el.innerHTML = trades.map(t => {
+        const time = new Date(t.timestamp).toLocaleString("nl-NL");
+        const cls = t.action === "buy" ? "side-buy" : "side-sell";
+        return `<div class="tv-trade-item">
+          <span class="activity-time">${time}</span>
+          <strong class="${cls}">${(t.action || "").toUpperCase()}</strong> ${t.symbol}
+          ${t.success ? `· ${fmt(t.quantity, 4)} @ $${fmt(t.price)}` : "· " + (t.message || "mislukt")}
+        </div>`;
+      }).join("");
+    }
+
+    function renderLiveFeed(live) {
+      const status = document.getElementById("live-status");
+      const symbolsEl = document.getElementById("live-symbols");
+      const eventsEl = document.getElementById("live-events");
+
+      if (!live || !live.last_scan) {
+        status.textContent = "Bot niet actief — run: python main.py --strategy ml --loop";
+        symbolsEl.innerHTML = '<div class="empty">Start de bot om live data te zien</div>';
+        return;
+      }
+
+      const ago = Math.round((Date.now() - new Date(live.last_scan).getTime()) / 1000);
+      status.textContent = ago < 60
+        ? `Laatste scan ${ago}s geleden · scant elke 30s`
+        : `Laatste scan ${Math.round(ago/60)} min geleden`;
+
+      const syms = Object.values(live.symbols || {});
+      symbolsEl.innerHTML = syms.length ? syms.map(s => {
+        const pct = (s.score * 100).toFixed(1);
+        const thresh = (s.threshold * 100).toFixed(0);
+        return `
+          <div class="symbol-card action-${s.action}">
+            <div class="symbol-name">${s.symbol} <span class="action-badge ${s.action}">${s.action}</span></div>
+            <div style="font-size:0.85rem;color:var(--muted)">$${fmt(s.price)} · ${s.model}</div>
+            <div class="score-bar-bg">
+              <div class="score-bar-fill" style="width:${pct}%"></div>
+            </div>
+            <div style="font-size:0.8rem">
+              AI score: <strong>${pct}%</strong> · drempel: ${thresh}%
+              ${s.in_position ? ' · <span style="color:var(--green)">IN POSITIE</span>' : ''}
+            </div>
+          </div>`;
+      }).join("") : '<div class="empty">Nog geen scan data</div>';
+
+      const events = (live.events || []).slice().reverse();
+      eventsEl.innerHTML = events.length ? events.map(e => {
+        const time = new Date(e.timestamp).toLocaleTimeString("nl-NL");
+        if (e.type === "trade") {
+          const cls = e.side === "buy" ? "side-buy" : "side-sell";
+          return `<div class="live-event trade">
+            <span class="activity-time">${time}</span>
+            <strong class="${cls}">${e.side.toUpperCase()}</strong> ${e.symbol}
+            · ${fmt(e.quantity, 4)} @ $${fmt(e.price)}
+          </div>`;
+        }
+        return `<div class="live-event">
+          <span class="activity-time">${time}</span>
+          Signaal: <strong class="side-${e.side}">${e.side.toUpperCase()}</strong> ${e.symbol} — ${e.reason || ""}
+        </div>`;
+      }).join("") : '<div class="empty">Nog geen trades vandaag</div>';
+    }
+
+    function renderCharts(data) {
+      const container = document.getElementById("charts");
+      const allPositions = [
+        ...data.crypto.positions.map(p => ({...p, market: "crypto"})),
+        ...data.stock.positions.map(p => ({...p, market: "stock"})),
+      ];
+
+      container.innerHTML = data.charts.map((c, i) => {
+        const pos = allPositions.find(p => p.symbol === c.symbol);
+        const posHtml = pos
+          ? `<span class="bot-stat">Positie: <strong>${fmt(pos.quantity, 4)}</strong> @ $${fmt(pos.entry)} · PnL <strong class="${pnlClass(pos.pnl)}">${pnlSign(pos.pnl)}$${fmt(pos.pnl)}</strong></span>`
+          : `<span class="bot-stat">Geen open positie</span>`;
+        const aiHtml = c.win_rate != null
+          ? `<span class="bot-stat">AI win rate: <strong>${(c.win_rate * 100).toFixed(0)}%</strong> @ ${(c.optimal_confidence * 100).toFixed(0)}% conf</span>`
+          : "";
+        const id = `tv-chart-${i}`;
+        return `
+          <div class="card chart-card">
+            <div class="chart-header">
+              <div>
+                <div class="chart-title">${c.symbol}</div>
+                <div class="chart-meta">${c.tv_symbol} · ${c.model_type}</div>
+              </div>
+              <a class="tv-link" href="${c.tv_url}" target="_blank" rel="noopener">Open in TradingView ↗</a>
+            </div>
+            <div class="tv-container" id="${id}"></div>
+            <div class="bot-overlay">
+              ${posHtml}
+              ${aiHtml}
+            </div>
+          </div>`;
+      }).join("");
+
+      data.charts.forEach((c, i) => {
+        const id = `tv-chart-${i}`;
+        if (tvWidgets[id]) return;
+        if (typeof TradingView === "undefined") return;
+        tvWidgets[id] = new TradingView.widget({
+          container_id: id,
+          symbol: c.tv_symbol,
+          interval: "15",
+          timezone: "Europe/Amsterdam",
+          theme: "dark",
+          style: "1",
+          locale: "nl",
+          enable_publishing: false,
+          hide_top_toolbar: false,
+          hide_legend: false,
+          save_image: false,
+          backgroundColor: "#161b22",
+          gridColor: "#30363d",
+        });
+      });
+    }
+
+    async function refresh() {
+      try {
+        const res = await fetch("/api/status");
+        const data = await res.json();
+
+        const badge = document.getElementById("mode-badge");
+        badge.textContent = data.mode.toUpperCase();
+        badge.className = "badge " + (data.mode === "live" ? "badge-live" : "badge-paper");
+
+        document.getElementById("updated").textContent =
+          "Bijgewerkt: " + new Date(data.updated_at).toLocaleString("nl-NL");
+
+        document.getElementById("watchlist").textContent =
+          "Crypto: " + data.crypto_symbols.join(", ") + " · Stocks: " + data.stock_symbols.join(", ");
+
+        const s = data.summary;
+        document.getElementById("summary").innerHTML = `
+          <div class="card"><div class="card-label">Totaal vermogen</div><div class="card-value">$${fmt(s.combined_equity)}</div></div>
+          <div class="card"><div class="card-label">Totale PnL</div><div class="card-value ${pnlClass(s.combined_pnl)}">${pnlSign(s.combined_pnl)}$${fmt(s.combined_pnl)}</div></div>
+          <div class="card"><div class="card-label">Totale PnL %</div><div class="card-value ${pnlClass(s.combined_pnl_pct)}">${pnlSign(s.combined_pnl_pct)}${fmt(s.combined_pnl_pct)}%</div></div>
+          <div class="card"><div class="card-label">Crypto equity</div><div class="card-value">$${fmt(data.crypto.equity)}</div></div>
+          <div class="card"><div class="card-label">Stocks equity</div><div class="card-value">$${fmt(data.stock.equity)}</div></div>
+        `;
+
+        document.getElementById("crypto-positions").innerHTML = positionsTable(data.crypto.positions);
+        document.getElementById("stock-positions").innerHTML = positionsTable(data.stock.positions);
+        document.getElementById("crypto-trades").innerHTML = tradesTable(data.crypto.trades);
+        document.getElementById("stock-trades").innerHTML = tradesTable(data.stock.trades);
+        document.getElementById("activity").innerHTML = renderActivity(data.activity);
+        renderLiveFeed(data.live);
+        renderTvSetup(data);
+
+        if (!window.chartsInitialized) {
+          renderCharts(data);
+          window.chartsInitialized = true;
+        } else {
+          // Update bot overlay only (charts blijven live via TradingView)
+          const allPositions = [
+            ...data.crypto.positions.map(p => ({...p, market: "crypto"})),
+            ...data.stock.positions.map(p => ({...p, market: "stock"})),
+          ];
+          data.charts.forEach((c, i) => {
+            const card = document.querySelectorAll(".bot-overlay")[i];
+            if (!card) return;
+            const pos = allPositions.find(p => p.symbol === c.symbol);
+            const posHtml = pos
+              ? `<span class="bot-stat">Positie: <strong>${fmt(pos.quantity, 4)}</strong> @ $${fmt(pos.entry)} · PnL <strong class="${pnlClass(pos.pnl)}">${pnlSign(pos.pnl)}$${fmt(pos.pnl)}</strong></span>`
+              : `<span class="bot-stat">Geen open positie</span>`;
+            const aiHtml = c.win_rate != null
+              ? `<span class="bot-stat">AI win rate: <strong>${(c.win_rate * 100).toFixed(0)}%</strong> @ ${(c.optimal_confidence * 100).toFixed(0)}% conf</span>`
+              : "";
+            card.innerHTML = posHtml + aiHtml;
+          });
+        }
+      } catch (e) {
+        document.getElementById("updated").textContent = "Fout bij laden — is dashboard gestart?";
+      }
+    }
+
+    refresh();
+    setInterval(refresh, 2000);
+  </script>
+</body>
+</html>
